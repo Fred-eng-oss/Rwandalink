@@ -5,6 +5,7 @@ import CoreValues from "@/components/about/core-values";
 import TeamSection from "@/components/about/team-section";
 import WhyChooseUs from "@/components/about/why-choose-us";
 import CompanyHistory from "@/components/about/company-history";
+import ProgramsOverview from "@/components/about/programs-overview";
 
 export const metadata: Metadata = {
   title: "About Us | SmartLink Rwanda",
@@ -34,6 +35,7 @@ export default function AboutPage() {
       <MissionVision />
       <CoreValues />
       <CompanyHistory />
+      <ProgramsOverview />
       <TeamSection />
       <WhyChooseUs />
     </main>
