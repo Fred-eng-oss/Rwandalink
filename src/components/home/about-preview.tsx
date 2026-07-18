@@ -3,8 +3,9 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { ArrowRight, CheckCircle } from "lucide-react";
+import { useSettings } from "@/hooks/use-settings";
 
-const highlights = [
+const defaultHighlights = [
   "Professional IT Services & Support",
   "Industry-Recognized Certifications",
   "Hands-On Technical Training",
@@ -12,6 +13,8 @@ const highlights = [
 ];
 
 export default function AboutPreview() {
+  const { get } = useSettings();
+
   return (
     <section className="py-20 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -27,14 +30,10 @@ export default function AboutPreview() {
               About SmartLink Rwanda
             </span>
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-6 leading-tight">
-              Your Trusted Partner in{" "}
-              <span className="text-blue-800">Digital Transformation</span>
+              {get('home_about_title', 'Your Trusted Partner in Digital Transformation')}
             </h2>
             <p className="text-gray-600 text-lg mb-6 leading-relaxed">
-              SmartLink Rwanda is a premier ICT company based in Gisozi, Kigali,
-              dedicated to bridging the technology gap in Rwanda&apos;s growing
-              digital economy. We provide comprehensive IT solutions, professional
-              training, and expert consultancy services.
+              {get('home_about_description', 'SmartLink Rwanda is a premier ICT company based in Gisozi, Kigali, dedicated to bridging the technology gap in Rwanda\'s growing digital economy. We provide comprehensive IT solutions, professional training, and expert consultancy services.')}
             </p>
             <p className="text-gray-600 mb-8 leading-relaxed">
               Since our inception, we have been committed to empowering individuals
@@ -44,7 +43,7 @@ export default function AboutPreview() {
             </p>
 
             <ul className="space-y-3 mb-8">
-              {highlights.map((item, index) => (
+              {defaultHighlights.map((item, index) => (
                 <motion.li
                   key={index}
                   className="flex items-center gap-3 text-gray-700"
@@ -79,7 +78,7 @@ export default function AboutPreview() {
             <div className="relative aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl">
               {/* Background Image */}
               <img
-                src="/images/DSC_0030.JPG.jpeg"
+                src={get('home_about_image', '/images/DSC_0030.JPG.jpeg')}
                 alt="SmartLink Rwanda Team"
                 className="absolute inset-0 w-full h-full object-cover"
               />

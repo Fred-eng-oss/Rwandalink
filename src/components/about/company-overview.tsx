@@ -9,39 +9,7 @@ import {
   Building2,
   CheckCircle2,
 } from "lucide-react";
-
-const stats = [
-  {
-    icon: Users,
-    value: "5,000+",
-    label: "Clients Served",
-  },
-  {
-    icon: Award,
-    value: "10+",
-    label: "Years Experience",
-  },
-  {
-    icon: Globe,
-    value: "30+",
-    label: "Districts Covered",
-  },
-  {
-    icon: TrendingUp,
-    value: "500+",
-    label: "Projects Delivered",
-  },
-  {
-    icon: Building2,
-    value: "50+",
-    label: "Enterprise Clients",
-  },
-  {
-    icon: CheckCircle2,
-    value: "99%",
-    label: "Client Satisfaction",
-  },
-];
+import { useSettings } from "@/hooks/use-settings";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -63,12 +31,23 @@ const itemVariants = {
 };
 
 export default function CompanyOverview() {
+  const { get } = useSettings();
+
+  const stats = [
+    { icon: Users, value: get('about_stat_1_value', '5,000+'), label: get('about_stat_1_label', 'Clients Served') },
+    { icon: Award, value: get('about_stat_2_value', '10+'), label: get('about_stat_2_label', 'Years Experience') },
+    { icon: Globe, value: get('about_stat_3_value', '30+'), label: get('about_stat_3_label', 'Districts Covered') },
+    { icon: TrendingUp, value: get('about_stat_4_value', '500+'), label: get('about_stat_4_label', 'Projects Delivered') },
+    { icon: Building2, value: get('about_stat_5_value', '50+'), label: get('about_stat_5_label', 'Enterprise Clients') },
+    { icon: CheckCircle2, value: get('about_stat_6_value', '99%'), label: get('about_stat_6_label', 'Client Satisfaction') },
+  ];
+
   return (
     <section className="relative overflow-hidden pt-32 pb-20">
       {/* Background Image */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url('/images/DSC_0015.JPG.jpeg')" }}
+        style={{ backgroundImage: `url('${get('about_overview_image', '/images/DSC_0015.JPG.jpeg')}')` }}
       />
       <div className="absolute inset-0 bg-blue-900/85 dark:bg-slate-950/90" />
 
@@ -80,17 +59,13 @@ export default function CompanyOverview() {
           className="text-center mb-16"
         >
           <span className="inline-block px-4 py-2 bg-white/10 backdrop-blur-sm text-emerald-400 text-sm font-medium rounded-full border border-white/20 mb-6">
-            About SmartLink Rwanda
+            {get('about_overview_badge', 'About SmartLink Rwanda')}
           </span>
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6">
-            Bridging the{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-amber-400">
-              Technology Gap
-            </span>
+            {get('about_overview_title', 'Bridging the Technology Gap')}
           </h1>
           <p className="text-xl text-blue-100 max-w-3xl mx-auto leading-relaxed">
-            Empowering individuals and businesses across Rwanda with innovative
-            technology solutions that drive growth in the digital economy.
+            {get('about_overview_subtitle', 'Empowering individuals and businesses across Rwanda with innovative technology solutions that drive growth in the digital economy.')}
           </p>
         </motion.div>
 
@@ -129,11 +104,7 @@ export default function CompanyOverview() {
                 Who We Are
               </h2>
               <p className="text-blue-100 leading-relaxed mb-6">
-                SmartLink Rwanda is a premier ICT company dedicated to bridging
-                the technology gap in Rwanda&apos;s rapidly growing digital
-                economy. Since our founding, we have been at the forefront of
-                digital transformation, providing cutting-edge solutions that
-                empower businesses and individuals alike.
+                {get('about_overview_description', 'SmartLink Rwanda is a premier ICT company dedicated to bridging the technology gap in Rwanda\'s rapidly growing digital economy. Since our founding, we have been at the forefront of digital transformation, providing cutting-edge solutions that empower businesses and individuals alike.')}
               </p>
               <p className="text-blue-100 leading-relaxed mb-6">
                 Our team of skilled professionals combines deep technical

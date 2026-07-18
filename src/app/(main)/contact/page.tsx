@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { motion } from 'framer-motion';
 import { Send, Loader2, Mail, Phone, MapPin, Clock, MessageSquare, User, Building } from 'lucide-react';
 import { toast } from 'sonner';
+import { useSettings } from '@/hooks/use-settings';
 
 const contactSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -20,6 +21,7 @@ type ContactFormData = z.infer<typeof contactSchema>;
 
 export default function ContactPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { get } = useSettings();
 
   const {
     register,
@@ -48,11 +50,17 @@ export default function ContactPage() {
     }
   };
 
+  const phone1 = get('company_phone_1', '0781899755');
+  const phone2 = get('company_phone_2', '0736691969');
+  const companyEmail = get('company_email', 'elysecag@gmail.com');
+  const address = get('company_address', 'Gisozi, Kigali, Rwanda');
+  const whatsappPhone = phone1.replace(/\s/g, '').replace(/^0/, '250');
+
   const contactInfo = [
-    { icon: <Mail className="w-6 h-6" />, title: 'Email', details: ['elysecag@gmail.com'], link: 'mailto:elysecag@gmail.com' },
-    { icon: <Phone className="w-6 h-6" />, title: 'Phone', details: ['0781899755', '0736691969'], link: 'tel:+250781899755' },
-    { icon: <MapPin className="w-6 h-6" />, title: 'Address', details: ['Gisozi, Kigali, Rwanda'], link: null },
-    { icon: <Clock className="w-6 h-6" />, title: 'Business Hours', details: ['Mon - Fri: 8:00 AM - 6:00 PM', 'Sat: 9:00 AM - 1:00 PM'], link: null },
+    { icon: <Mail className="w-6 h-6" />, title: 'Email', details: [companyEmail], link: `mailto:${companyEmail}` },
+    { icon: <Phone className="w-6 h-6" />, title: 'Phone', details: [phone1, phone2], link: `tel:${phone1.replace(/\s/g, '')}` },
+    { icon: <MapPin className="w-6 h-6" />, title: 'Address', details: [address], link: null },
+    { icon: <Clock className="w-6 h-6" />, title: 'Business Hours', details: [get('business_hours_weekdays', 'Mon - Fri: 8:00 AM - 6:00 PM'), get('business_hours_saturday', 'Sat: 9:00 AM - 1:00 PM')], link: null },
   ];
 
   return (
@@ -61,8 +69,8 @@ export default function ContactPage() {
       <section className="relative py-20 bg-gradient-to-r from-blue-900 via-blue-800 to-purple-900">
         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">Contact Us</h1>
-          <p className="text-blue-100 text-lg max-w-2xl mx-auto">We would love to hear from you. Get in touch with our team.</p>
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">{get('contact_hero_title', 'Contact Us')}</h1>
+          <p className="text-blue-100 text-lg max-w-2xl mx-auto">{get('contact_hero_subtitle', 'We would love to hear from you. Get in touch with our team.')}</p>
         </div>
       </section>
 
@@ -102,7 +110,7 @@ export default function ContactPage() {
             viewport={{ once: true }}
           >
             <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-              <MessageSquare className="w-6 h-6 text-blue-600" /> Send us a Message
+              <MessageSquare className="w-6 h-6 text-blue-600" /> {get('contact_form_title', 'Send us a Message')}
             </h2>
             <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-3xl shadow-xl p-8 space-y-6">
               <div className="grid sm:grid-cols-2 gap-6">
@@ -160,7 +168,7 @@ export default function ContactPage() {
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Find Us</h2>
             <div className="rounded-3xl overflow-hidden shadow-xl h-[400px] lg:h-full min-h-[400px]">
               <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3987.5!2d29.91!3d-1.95!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMcKwNTcnMDAuMCJTIDI5wrA1NCczNi4wIkU!5e0!3m2!1sen!2srw!4v1"
+                src={get('contact_map_embed', 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3987.5!2d29.91!3d-1.95!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMcKwNTcnMDAuMCJTIDI5wrA1NCczNi4wIkU!5e0!3m2!1sen!2srw!4v1')}
                 width="100%"
                 height="100%"
                 style={{ border: 0 }}
@@ -172,7 +180,7 @@ export default function ContactPage() {
 
             {/* WhatsApp */}
             <a
-              href="https://wa.me/250781899755"
+              href={`https://wa.me/${whatsappPhone}`}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-6 w-full py-4 bg-green-500 text-white rounded-xl font-bold text-lg hover:bg-green-600 transition-all flex items-center justify-center gap-2 shadow-lg"

@@ -14,6 +14,7 @@ import {
   Send,
   ArrowRight,
 } from 'lucide-react'
+import { useSettings } from '@/hooks/use-settings'
 
 const quickLinks = [
   { name: 'Home', href: '/' },
@@ -24,7 +25,7 @@ const quickLinks = [
   { name: 'Contact', href: '/contact' },
 ]
 
-const services = [
+const defaultServices = [
   'Website Design & Development',
   'Custom Business Systems',
   'Web Hosting',
@@ -33,7 +34,7 @@ const services = [
   'IT Support & Consulting',
 ]
 
-const programs = [
+const defaultPrograms = [
   'Software Development & Engineering',
   'Networking & Internet Technology',
   'Computer System & Architecture',
@@ -44,15 +45,21 @@ const programs = [
 ]
 
 const socials = [
-  { name: 'Facebook', icon: Globe, href: '#' },
-  { name: 'Twitter', icon: MessageCircle, href: '#' },
-  { name: 'LinkedIn', icon: Share2, href: '#' },
-  { name: 'Instagram', icon: Camera, href: '#' },
+  { name: 'Facebook', icon: Globe, key: 'social_facebook' },
+  { name: 'Twitter', icon: MessageCircle, key: 'social_twitter' },
+  { name: 'LinkedIn', icon: Share2, key: 'social_linkedin' },
+  { name: 'Instagram', icon: Camera, key: 'social_instagram' },
 ]
 
 export default function Footer() {
   const [email, setEmail] = useState('')
   const [subscribed, setSubscribed] = useState(false)
+  const { get } = useSettings()
+
+  const phone1 = get('company_phone_1', '0781899755')
+  const phone2 = get('company_phone_2', '0736691969')
+  const companyEmail = get('company_email', 'elysecag@gmail.com')
+  const address = get('company_address', 'Gisozi, Kigali, Rwanda')
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault()
@@ -62,6 +69,8 @@ export default function Footer() {
       setTimeout(() => setSubscribed(false), 3000)
     }
   }
+
+  const formatPhone = (p: string) => p.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3')
 
   return (
     <footer className="bg-slate-900 text-slate-300">
@@ -76,8 +85,7 @@ export default function Footer() {
               />
             </Link>
             <p className="text-sm leading-relaxed text-slate-400 mb-6 max-w-sm">
-              Empowering Rwanda through innovative ICT solutions, digital skills training,
-              and technology-driven programs that bridge the digital divide.
+              {get('company_description', 'Empowering Rwanda through innovative ICT solutions, digital skills training, and technology-driven programs that bridge the digital divide.')}
             </p>
 
             <form onSubmit={handleSubscribe} className="flex gap-2 max-w-sm">
@@ -127,7 +135,7 @@ export default function Footer() {
               Our Services
             </h3>
             <ul className="space-y-2.5">
-              {services.map((s) => (
+              {defaultServices.map((s) => (
                 <li key={s}>
                   <Link
                     href="/services"
@@ -145,7 +153,7 @@ export default function Footer() {
               Our Programs
             </h3>
             <ul className="space-y-2.5">
-              {programs.map((p) => (
+              {defaultPrograms.map((p) => (
                 <li key={p}>
                   <Link
                     href="/programs"
@@ -166,17 +174,17 @@ export default function Footer() {
                 Contact Info
               </h3>
               <div className="space-y-2.5 text-sm">
-                <a href="tel:+250781899755" className="flex items-center gap-2.5 hover:text-white transition-colors">
+                <a href={`tel:${phone1.replace(/\s/g, '')}`} className="flex items-center gap-2.5 hover:text-white transition-colors">
                   <Phone className="w-4 h-4 text-blue-400 shrink-0" />
-                  078 189 9755 / 073 669 1969
+                  {formatPhone(phone1)} / {formatPhone(phone2)}
                 </a>
-                <a href="mailto:elysecag@gmail.com" className="flex items-center gap-2.5 hover:text-white transition-colors">
+                <a href={`mailto:${companyEmail}`} className="flex items-center gap-2.5 hover:text-white transition-colors">
                   <Mail className="w-4 h-4 text-blue-400 shrink-0" />
-                  elysecag@gmail.com
+                  {companyEmail}
                 </a>
                 <div className="flex items-start gap-2.5">
                   <MapPin className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-                  Gisozi, Kigali, Rwanda
+                  {address}
                 </div>
               </div>
             </div>
@@ -189,9 +197,9 @@ export default function Footer() {
                 <div className="flex items-center gap-2.5">
                   <Clock className="w-4 h-4 text-blue-400 shrink-0" />
                   <div>
-                    <p>Monday – Friday: 8:00 AM – 5:00 PM</p>
-                    <p>Saturday: 9:00 AM – 1:00 PM</p>
-                    <p>Sunday: Closed</p>
+                    <p>{get('business_hours_weekdays', 'Monday \u2013 Friday: 8:00 AM \u2013 5:00 PM')}</p>
+                    <p>{get('business_hours_saturday', 'Saturday: 9:00 AM \u2013 1:00 PM')}</p>
+                    <p>{get('business_hours_sunday', 'Sunday: Closed')}</p>
                   </div>
                 </div>
               </div>
@@ -202,16 +210,21 @@ export default function Footer() {
                 Follow Us
               </h3>
               <div className="flex gap-3">
-                {socials.map((s) => (
-                  <a
-                    key={s.name}
-                    href={s.href}
-                    aria-label={s.name}
-                    className="w-10 h-10 rounded-lg bg-slate-800 hover:bg-blue-600 flex items-center justify-center text-slate-400 hover:text-white transition-all duration-300 hover:-translate-y-0.5"
-                  >
-                    <s.icon className="w-4 h-4" />
-                  </a>
-                ))}
+                {socials.map((s) => {
+                  const href = get(s.key, '#');
+                  return (
+                    <a
+                      key={s.name}
+                      href={href || '#'}
+                      aria-label={s.name}
+                      target={href && href !== '#' ? '_blank' : undefined}
+                      rel={href && href !== '#' ? 'noopener noreferrer' : undefined}
+                      className="w-10 h-10 rounded-lg bg-slate-800 hover:bg-blue-600 flex items-center justify-center text-slate-400 hover:text-white transition-all duration-300 hover:-translate-y-0.5"
+                    >
+                      <s.icon className="w-4 h-4" />
+                    </a>
+                  );
+                })}
               </div>
               <p className="text-sm text-slate-400 mt-2">
                 Stay connected with us on social media for the latest updates and programs.
@@ -222,7 +235,7 @@ export default function Footer() {
 
         <div className="mt-8 pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-sm text-slate-400">
-            © {new Date().getFullYear()} SmartLink Rwanda. All rights reserved.
+            &copy; {new Date().getFullYear()} {get('company_name', 'SmartLink Rwanda')}. All rights reserved.
           </p>
           <div className="flex items-center gap-4 text-sm text-slate-400">
             <Link href="/privacy" className="hover:text-white transition-colors">

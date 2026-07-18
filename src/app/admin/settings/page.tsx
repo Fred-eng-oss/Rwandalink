@@ -115,7 +115,11 @@ export default function SettingsPage() {
         };
       } else if (activeTab === 'hours') {
         mapped = {
-          business_hours_weekdays: data.monday || data.tuesday || data.wednesday || data.thursday || data.friday,
+          business_hours_weekdays: data.monday,
+          business_hours_tuesday: data.tuesday,
+          business_hours_wednesday: data.wednesday,
+          business_hours_thursday: data.thursday,
+          business_hours_friday: data.friday,
           business_hours_saturday: data.saturday,
           business_hours_sunday: data.sunday,
         };

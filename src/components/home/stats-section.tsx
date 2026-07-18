@@ -3,64 +3,55 @@
 import { motion, useMotionValue, useTransform, animate } from "framer-motion";
 import { useEffect, useRef } from "react";
 import { GraduationCap, FolderCheck, Clock, ThumbsUp } from "lucide-react";
+import { useSettings } from "@/hooks/use-settings";
 
-function StatsCounter({
-  value,
-  suffix,
-  duration = 2,
-}: {
-  value: number;
-  suffix: string;
-  duration?: number;
-}) {
+const icons = [GraduationCap, FolderCheck, Clock, ThumbsUp];
+
+const defaultStats = [
+  { value: 500, suffix: "+", label: "Students Trained", description: "Graduates ready for the digital workforce" },
+  { value: 50, suffix: "+", label: "Projects Completed", description: "Successful IT solutions delivered" },
+  { value: 10, suffix: "+", label: "Years Experience", description: "Serving Rwanda's tech community" },
+  { value: 98, suffix: "%", label: "Client Satisfaction", description: "Happy clients across the country" },
+];
+
+function parseStatNumber(raw: string, fallback: number): { value: number; suffix: string } {
+  if (!raw) return { value: fallback, suffix: defaultStats[0].suffix };
+  const match = raw.match(/^(\d+)(.*)$/);
+  if (match) return { value: parseInt(match[1], 10), suffix: match[2] || '+' };
+  return { value: fallback, suffix: '+' };
+}
+
+function StatsCounter({ value, suffix, duration = 2 }: { value: number; suffix: string; duration?: number }) {
   const count = useMotionValue(0);
   const rounded = useTransform(count, (latest) => Math.round(latest));
   const display = useTransform(rounded, (latest) => `${latest}${suffix}`);
   const ref = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
-    const controls = animate(count, value, {
-      duration,
-      ease: "easeOut",
-    });
+    const controls = animate(count, value, { duration, ease: "easeOut" });
     return controls.stop;
   }, [count, value, duration]);
 
   return <motion.span ref={ref}>{display}</motion.span>;
 }
 
-const stats = [
-  {
-    icon: GraduationCap,
-    value: 500,
-    suffix: "+",
-    label: "Students Trained",
-    description: "Graduates ready for the digital workforce",
-  },
-  {
-    icon: FolderCheck,
-    value: 50,
-    suffix: "+",
-    label: "Projects Completed",
-    description: "Successful IT solutions delivered",
-  },
-  {
-    icon: Clock,
-    value: 10,
-    suffix: "+",
-    label: "Years Experience",
-    description: "Serving Rwanda's tech community",
-  },
-  {
-    icon: ThumbsUp,
-    value: 98,
-    suffix: "%",
-    label: "Client Satisfaction",
-    description: "Happy clients across the country",
-  },
-];
-
 export default function StatsSection() {
+  const { get } = useSettings();
+
+  const stats = [1, 2, 3, 4].map((i) => {
+    const { value, suffix } = parseStatNumber(
+      get(`home_stat_${i}_number`),
+      defaultStats[i - 1].value
+    );
+    return {
+      icon: icons[i - 1],
+      value,
+      suffix,
+      label: get(`home_stat_${i}_label`, defaultStats[i - 1].label),
+      description: defaultStats[i - 1].description,
+    };
+  });
+
   return (
     <section className="py-20 relative overflow-hidden">
       {/* Background Image */}

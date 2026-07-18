@@ -3,39 +3,10 @@
 import { motion } from "framer-motion";
 import { Phone, Mail, MapPin, Send, Clock } from "lucide-react";
 import { useState } from "react";
-
-const contactInfo = [
-  {
-    icon: Phone,
-    title: "Phone",
-    details: ["0781 899 755", "0736 691 969"],
-    href: "tel:0781899755",
-    color: "from-blue-600 to-blue-800",
-  },
-  {
-    icon: Mail,
-    title: "Email",
-    details: ["elysecag@gmail.com"],
-    href: "mailto:elysecag@gmail.com",
-    color: "from-emerald-600 to-emerald-800",
-  },
-  {
-    icon: MapPin,
-    title: "Location",
-    details: ["Gisozi, Kigali", "Rwanda"],
-    href: "https://maps.google.com/?q=Gisozi+Kigali+Rwanda",
-    color: "from-amber-500 to-orange-600",
-  },
-  {
-    icon: Clock,
-    title: "Working Hours",
-    details: ["Mon - Fri: 8AM - 6PM", "Sat: 9AM - 1PM"],
-    href: null,
-    color: "from-purple-600 to-purple-800",
-  },
-];
+import { useSettings } from "@/hooks/use-settings";
 
 export default function ContactPreview() {
+  const { get } = useSettings();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -43,9 +14,47 @@ export default function ContactPreview() {
     message: "",
   });
 
+  const phone1 = get('company_phone_1', '0781899755');
+  const phone2 = get('company_phone_2', '0736691969');
+  const companyEmail = get('company_email', 'elysecag@gmail.com');
+  const address = get('company_address', 'Gisozi, Kigali');
+
+  const contactInfo = [
+    {
+      icon: Phone,
+      title: "Phone",
+      details: [phone1.replace(/(\d{4})(\d{3})(\d{3})/, '$1 $2 $3'), phone2.replace(/(\d{4})(\d{3})(\d{3})/, '$1 $2 $3')],
+      href: `tel:${phone1.replace(/\s/g, '')}`,
+      color: "from-blue-600 to-blue-800",
+    },
+    {
+      icon: Mail,
+      title: "Email",
+      details: [companyEmail],
+      href: `mailto:${companyEmail}`,
+      color: "from-emerald-600 to-emerald-800",
+    },
+    {
+      icon: MapPin,
+      title: "Location",
+      details: [address, "Rwanda"],
+      href: "https://maps.google.com/?q=Gisozi+Kigali+Rwanda",
+      color: "from-amber-500 to-orange-600",
+    },
+    {
+      icon: Clock,
+      title: "Working Hours",
+      details: [
+        get('business_hours_weekdays', 'Mon - Fri: 8AM - 6PM'),
+        get('business_hours_saturday', 'Sat: 9AM - 1PM'),
+      ],
+      href: null,
+      color: "from-purple-600 to-purple-800",
+    },
+  ];
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission
     console.log("Form submitted:", formData);
   };
 

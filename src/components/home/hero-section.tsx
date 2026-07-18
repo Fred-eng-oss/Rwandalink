@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { ArrowRight, Monitor, Wifi, Database, Shield, Cpu, Globe } from "lucide-react";
+import { useSettings } from "@/hooks/use-settings";
 
 const floatingIcons = [
   { Icon: Monitor, x: "10%", y: "20%", delay: 0 },
@@ -14,12 +15,14 @@ const floatingIcons = [
 ];
 
 export default function HeroSection() {
+  const { get } = useSettings();
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Image */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url('/images/DSC_0010.JPG.jpeg')" }}
+        style={{ backgroundImage: `url('${get('home_hero_image', '/images/DSC_0010.JPG.jpeg')}')` }}
       />
       {/* Dark Overlay */}
       <div className="absolute inset-0 bg-blue-900/80 dark:bg-slate-950/85" />
@@ -91,7 +94,7 @@ export default function HeroSection() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.3 }}
           >
-            🇷🇼 Leading ICT Solutions in Rwanda
+            {get('home_hero_badge', 'Leading ICT Solutions in Rwanda')}
           </motion.span>
         </motion.div>
 
@@ -101,10 +104,16 @@ export default function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
         >
-          Empowering Rwanda&apos;s{" "}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-amber-400">
-            Digital Future
-          </span>
+          {get('home_hero_title', "Empowering Rwanda\u2019s Digital Future").includes('Digital Future') ? (
+            <>
+              Empowering Rwanda&apos;s{" "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-amber-400">
+                Digital Future
+              </span>
+            </>
+          ) : (
+            get('home_hero_title', "Empowering Rwanda's Digital Future")
+          )}
         </motion.h1>
 
         <motion.p
@@ -113,9 +122,7 @@ export default function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
         >
-          Bridging the technology gap in Rwanda&apos;s digital economy through
-          professional IT services, training, certifications, and consultancy.
-          Your trusted partner for all things technology.
+          {get('home_hero_subtitle', 'Bridging the technology gap in Rwanda\'s digital economy through professional IT services, training, certifications, and consultancy. Your trusted partner for all things technology.')}
         </motion.p>
 
         <motion.div

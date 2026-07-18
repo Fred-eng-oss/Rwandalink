@@ -2,8 +2,11 @@
 
 import { motion } from "framer-motion";
 import { Target, Eye, ArrowRight } from "lucide-react";
+import { useSettings } from "@/hooks/use-settings";
 
 export default function MissionVision() {
+  const { get } = useSettings();
+
   return (
     <section className="py-20 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -44,13 +47,10 @@ export default function MissionVision() {
                   <Target className="w-8 h-8 text-emerald-400" />
                 </div>
                 <h3 className="text-2xl md:text-3xl font-bold mb-4">
-                  Our Mission
+                  {get('about_mission_title', 'Our Mission')}
                 </h3>
                 <p className="text-blue-100 leading-relaxed text-lg mb-8">
-                  To empower individuals and businesses with innovative
-                  technology solutions that drive growth, efficiency, and success
-                  in the digital economy. We are committed to making technology
-                  accessible, affordable, and impactful for every Rwandan.
+                  {get('about_mission_description', 'To empower individuals and businesses with innovative technology solutions that drive growth, efficiency, and success in the digital economy. We are committed to making technology accessible, affordable, and impactful for every Rwandan.')}
                 </p>
                 <div className="flex items-center text-emerald-400 font-medium group-hover:gap-3 gap-2 transition-all duration-300">
                   <span>Learn how we fulfill our mission</span>
@@ -77,14 +77,10 @@ export default function MissionVision() {
                   <Eye className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="text-2xl md:text-3xl font-bold mb-4">
-                  Our Vision
+                  {get('about_vision_title', 'Our Vision')}
                 </h3>
                 <p className="text-emerald-100 leading-relaxed text-lg mb-8">
-                  To be Rwanda&apos;s leading technology solutions provider,
-                  recognized for innovation, excellence, and commitment to
-                  transforming the digital landscape. We envision a Rwanda where
-                  technology empowers every individual and organization to reach
-                  their full potential.
+                  {get('about_vision_description', "To be Rwanda's leading technology solutions provider, recognized for innovation, excellence, and commitment to transforming the digital landscape. We envision a Rwanda where technology empowers every individual and organization to reach their full potential.")}
                 </p>
                 <div className="flex items-center text-white/90 font-medium group-hover:gap-3 gap-2 transition-all duration-300">
                   <span>See our vision in action</span>
