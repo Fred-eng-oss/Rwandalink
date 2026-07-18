@@ -79,7 +79,7 @@ export default function ProgramsPreview() {
             >
               {program.image && (
                 <div className="relative h-48">
-                  <img src={program.image} alt={program.title} className="w-full h-full object-cover" />
+                  <img src={program.image} alt={program.title} className="w-full h-full object-cover" loading="lazy" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
                 </div>
               )}

@@ -76,8 +76,11 @@ export default function Header() {
               <img
                 src="/images/smart.png.jpeg"
                 alt="SmartLink Rwanda"
-                className="h-12 w-auto object-contain"
+                className="h-10 w-auto object-contain"
               />
+              <span className="text-lg font-bold text-slate-800 dark:text-white hidden sm:inline">
+                SmartLink <span className="text-blue-600 dark:text-blue-400">Rwanda</span>
+              </span>
             </Link>
 
             <nav className="hidden lg:flex items-center gap-1">

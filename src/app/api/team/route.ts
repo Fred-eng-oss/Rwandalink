@@ -6,7 +6,9 @@ export async function GET() {
     const team = await prisma.teamMember.findMany({
       orderBy: { createdAt: 'desc' },
     });
-    return NextResponse.json(team);
+    return NextResponse.json(team, {
+      headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' },
+    });
   } catch (error) {
     console.error('Error fetching team:', error);
     return NextResponse.json({ error: 'Failed to fetch team members' }, { status: 500 });

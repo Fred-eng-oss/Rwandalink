@@ -8,6 +8,7 @@ export default function MainLayout({
 }) {
   return (
     <>
+      <link rel="preload" href="/images/DSC_0010.JPG.jpeg" as="image" />
       <Header />
       <main className="min-h-screen pt-16 lg:pt-20">{children}</main>
       <Footer />

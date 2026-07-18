@@ -21,6 +21,7 @@ import {
   Home,
   Info,
   Phone,
+  Bell,
 } from 'lucide-react'
 
 const navItems = [
@@ -42,6 +43,7 @@ const manageItems = [
   { href: '/admin/testimonials', label: 'Testimonials', icon: Quote },
   { href: '/admin/team', label: 'Team', icon: Users },
   { href: '/admin/messages', label: 'Messages', icon: Mail },
+  { href: '/admin/notifications', label: 'Notifications', icon: Bell },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ]
 

@@ -6,7 +6,9 @@ export async function GET() {
     const testimonials = await prisma.testimonial.findMany({
       orderBy: { createdAt: 'desc' },
     });
-    return NextResponse.json(testimonials);
+    return NextResponse.json(testimonials, {
+      headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' },
+    });
   } catch (error) {
     console.error('Error fetching testimonials:', error);
     return NextResponse.json({ error: 'Failed to fetch testimonials' }, { status: 500 });

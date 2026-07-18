@@ -6,7 +6,9 @@ export async function GET() {
     const programs = await prisma.program.findMany({
       orderBy: { createdAt: 'desc' },
     });
-    return NextResponse.json(programs);
+    return NextResponse.json(programs, {
+      headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' },
+    });
   } catch (error) {
     console.error('Error fetching programs:', error);
     return NextResponse.json({ error: 'Failed to fetch programs' }, { status: 500 });

@@ -11,10 +11,10 @@ export async function POST() {
     const hashedPassword = hashPassword('SmartLink@2024');
 
     const admin = await prisma.user.upsert({
-      where: { email: 'elysecag@gmail.com' },
+      where: { email: 'fredmugisha094@gmail.com' },
       update: { password: hashedPassword },
       create: {
-        email: 'elysecag@gmail.com',
+        email: 'fredmugisha094@gmail.com',
         name: 'SmartLink Admin',
         password: hashedPassword,
         role: 'admin',

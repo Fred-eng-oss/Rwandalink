@@ -95,7 +95,7 @@ export default function ServicesPreview() {
               >
                 {service.image ? (
                   <div className="relative h-32">
-                    <img src={service.image} alt={service.title} className="w-full h-full object-cover" />
+                    <img src={service.image} alt={service.title} className="w-full h-full object-cover" loading="lazy" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                     <div className="absolute inset-0 flex items-center justify-center">
                       <IconComp className="w-12 h-12 text-white drop-shadow-lg" />
