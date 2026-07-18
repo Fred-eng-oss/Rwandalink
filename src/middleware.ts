@@ -7,7 +7,10 @@ export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const isAdminRoute = pathname.startsWith('/admin');
   const isLoginPage = pathname === '/admin';
-  const isPublicAdminPage = pathname === '/admin/forgot-password' || pathname === '/admin/reset-password';
+  const isPublicAdminPage =
+    pathname === '/admin/forgot-password' ||
+    pathname === '/admin/verify-code' ||
+    pathname === '/admin/reset-password';
 
   if (isAdminRoute && !isLoginPage && !isPublicAdminPage && !adminToken) {
     return NextResponse.redirect(new URL('/admin', request.url));
