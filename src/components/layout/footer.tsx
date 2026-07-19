@@ -13,6 +13,7 @@ import {
   Camera,
   Send,
   ArrowRight,
+  Code,
 } from 'lucide-react'
 import { useSettings } from '@/hooks/use-settings'
 
@@ -248,6 +249,25 @@ export default function Footer() {
               Admin
             </Link>
           </div>
+        </div>
+
+        <div className="mt-6 pt-5 border-t border-slate-800/50 text-center">
+          <p className="text-xs text-slate-500 flex items-center justify-center gap-1.5">
+            <Code className="w-3.5 h-3.5" />
+            Website Designed & Developed by{' '}
+            <a
+              href="mailto:fredmugisha094@gmail.com"
+              className="text-blue-400 hover:text-blue-300 font-medium transition-colors duration-300 hover:tracking-wide"
+            >
+              Mugisha Fred
+            </a>
+          </p>
+          <a
+            href="mailto:fredmugisha094@gmail.com"
+            className="text-[11px] text-slate-600 hover:text-slate-400 transition-colors duration-300"
+          >
+            fredmugisha094@gmail.com
+          </a>
         </div>
       </div>
     </footer>
