@@ -6,10 +6,27 @@ const JWT_SECRET = process.env.JWT_SECRET || 'smartlink-secret-key';
 
 export async function POST(request: NextRequest) {
   try {
+    const origin = request.headers.get('origin');
+    const host = request.headers.get('host');
+    if (origin && host) {
+      try {
+        const originUrl = new URL(origin);
+        if (originUrl.host !== host) {
+          return NextResponse.json({ error: 'CSRF verification failed' }, { status: 403 });
+        }
+      } catch {
+        return NextResponse.json({ error: 'Invalid origin header' }, { status: 403 });
+      }
+    }
+
     const { token, otp } = await request.json();
 
     if (!token || !otp) {
       return NextResponse.json({ error: 'Token and verification code are required' }, { status: 400 });
+    }
+
+    if (!/^\d{6}$/.test(otp)) {
+      return NextResponse.json({ error: 'Verification code must be exactly 6 digits' }, { status: 400 });
     }
 
     let payload: { email: string; purpose: string };
@@ -32,8 +49,10 @@ export async function POST(request: NextRequest) {
       orderBy: { createdAt: 'desc' },
     });
 
+    // No record found (unregistered email or deleted record) - return same error as wrong OTP
+    // This prevents user enumeration
     if (!reset) {
-      return NextResponse.json({ error: 'No pending reset found. Please request a new code.' }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid verification code. Please try again.' }, { status: 400 });
     }
 
     if (new Date() > reset.expires) {
@@ -41,20 +60,20 @@ export async function POST(request: NextRequest) {
     }
 
     if (reset.attempts >= reset.maxAttempts) {
-      return NextResponse.json({ error: 'Too many attempts. Please request a new code.' }, { status: 429 });
+      return NextResponse.json({ error: 'Too many attempts. Please request a new code.', attemptsRemaining: 0 }, { status: 429 });
     }
 
-    await prisma.passwordReset.update({
+    const updatedReset = await prisma.passwordReset.update({
       where: { id: reset.id },
       data: { attempts: reset.attempts + 1 },
     });
 
     if (reset.otp !== otp) {
-      const remaining = reset.maxAttempts - (reset.attempts + 1);
-      return NextResponse.json({
-        error: `Invalid verification code. ${remaining} attempt(s) remaining.`,
-        attemptsRemaining: remaining,
-      }, { status: 400 });
+      const remaining = reset.maxAttempts - updatedReset.attempts;
+      if (remaining <= 0) {
+        return NextResponse.json({ error: 'Too many attempts. Please request a new code.', attemptsRemaining: 0 }, { status: 429 });
+      }
+      return NextResponse.json({ error: `Invalid verification code. ${remaining} attempt(s) remaining.`, attemptsRemaining: remaining }, { status: 400 });
     }
 
     const resetToken = jwt.sign(
@@ -68,18 +87,19 @@ export async function POST(request: NextRequest) {
       data: { verified: true },
     });
 
-    await prisma.notification.create({
-      data: {
-        type: 'security',
-        title: 'OTP Verified',
-        message: `The verification code for "${payload.email}" was verified successfully. Waiting for password change.`,
-      },
-    });
+    try {
+      await prisma.notification.create({
+        data: {
+          type: 'security',
+          title: 'OTP Verified',
+          message: `The verification code for "${payload.email}" was verified successfully.`,
+        },
+      });
+    } catch (e) {
+      console.error('Failed to create notification:', e);
+    }
 
-    return NextResponse.json({
-      message: 'Verification successful',
-      resetToken,
-    });
+    return NextResponse.json({ message: 'Verification successful', resetToken });
   } catch (error) {
     console.error('Verify OTP error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

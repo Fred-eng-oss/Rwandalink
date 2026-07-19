@@ -7,6 +7,19 @@ const JWT_SECRET = process.env.JWT_SECRET || 'smartlink-secret-key';
 
 export async function POST(request: NextRequest) {
   try {
+    const origin = request.headers.get('origin');
+    const host = request.headers.get('host');
+    if (origin && host) {
+      try {
+        const originUrl = new URL(origin);
+        if (originUrl.host !== host) {
+          return NextResponse.json({ error: 'CSRF verification failed' }, { status: 403 });
+        }
+      } catch {
+        return NextResponse.json({ error: 'Invalid origin header' }, { status: 403 });
+      }
+    }
+
     const { token } = await request.json();
 
     if (!token) {
@@ -24,33 +37,65 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid session' }, { status: 400 });
     }
 
+    const email = payload.email;
+
+    const lastReset = await prisma.passwordReset.findFirst({
+      where: { email },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (lastReset && Date.now() - new Date(lastReset.createdAt).getTime() < 60000) {
+      return NextResponse.json(
+        { error: 'Please wait at least 60 seconds before requesting another code.' },
+        { status: 429 }
+      );
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    const expires = new Date(Date.now() + 10 * 60 * 1000);
+
+    // Unregistered email: return same success response, no DB record, no email
+    // Verify-otp will return "Invalid code" which is indistinguishable from wrong OTP
+    if (!user) {
+      const newToken = jwt.sign(
+        { email, purpose: 'password-reset' },
+        JWT_SECRET,
+        { expiresIn: '10m' }
+      );
+      return NextResponse.json({
+        message: 'A new verification code has been sent.',
+        token: newToken,
+        expiresAt: expires.toISOString(),
+      });
+    }
+
+    // Registered user: delete old codes, create new one
     await prisma.passwordReset.deleteMany({
-      where: { email: payload.email, used: false },
+      where: { email, used: false },
     });
 
     const otp = generateOTP();
     const newToken = jwt.sign(
-      { email: payload.email, purpose: 'password-reset' },
+      { email, purpose: 'password-reset' },
       JWT_SECRET,
       { expiresIn: '10m' }
     );
 
-    const expires = new Date(Date.now() + 10 * 60 * 1000);
-
     await prisma.passwordReset.create({
       data: {
-        email: payload.email,
+        email,
         otp,
         token: newToken,
         expires,
       },
     });
 
-    await sendOTPEmail(payload.email, otp);
+    await sendOTPEmail(email, otp);
 
     return NextResponse.json({
       message: 'A new verification code has been sent.',
       token: newToken,
+      expiresAt: expires.toISOString(),
     });
   } catch (error) {
     console.error('Resend OTP error:', error);

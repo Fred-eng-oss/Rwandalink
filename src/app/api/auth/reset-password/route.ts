@@ -7,12 +7,32 @@ const JWT_SECRET = process.env.JWT_SECRET || 'smartlink-secret-key';
 
 export async function POST(request: NextRequest) {
   try {
+    // 1. CSRF protection: check Origin and Host
+    const origin = request.headers.get('origin');
+    const host = request.headers.get('host');
+    if (origin && host) {
+      try {
+        const originUrl = new URL(origin);
+        if (originUrl.host !== host) {
+          return NextResponse.json({ error: 'CSRF verification failed' }, { status: 403 });
+        }
+      } catch {
+        return NextResponse.json({ error: 'Invalid origin header' }, { status: 403 });
+      }
+    }
+
     const { resetToken, password } = await request.json();
 
     if (!resetToken || !password) {
       return NextResponse.json({ error: 'Reset token and password are required' }, { status: 400 });
     }
 
+    // Password requirements:
+    // - Minimum 8 characters
+    // - One uppercase letter
+    // - One lowercase letter
+    // - One number
+    // - One special character
     if (password.length < 8) {
       return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 });
     }
@@ -44,6 +64,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid session' }, { status: 400 });
     }
 
+    // Retrieve active reset record
     const reset = await prisma.passwordReset.findUnique({
       where: { id: payload.resetId },
     });
@@ -52,31 +73,42 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'This reset session is no longer valid. Please start over.' }, { status: 400 });
     }
 
+    // Verify user exists (double check)
+    const user = await prisma.user.findUnique({
+      where: { email: payload.email },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: 'User not found. Please start over.' }, { status: 400 });
+    }
+
+    // Securely hash password (will use bcryptjs)
     const hashedPassword = hashPassword(password);
 
+    // Save to database
     await prisma.user.update({
       where: { email: payload.email },
       data: { password: hashedPassword },
     });
 
-    await prisma.passwordReset.update({
-      where: { id: reset.id },
-      data: { used: true },
-    });
-
+    // Invalidate and delete ALL reset records for this user (Delete the OTP after successful reset, Invalidate previous reset tokens)
     await prisma.passwordReset.deleteMany({
-      where: { email: payload.email, used: false },
+      where: { email: payload.email },
     });
 
-    const ip = request.headers.get('x-forwarded-for') || 'Unknown';
-
-    await prisma.notification.create({
-      data: {
-        type: 'security',
-        title: 'Password Changed Successfully',
-        message: `The password for "${payload.email}" was changed from IP: ${ip}. If this was not you, contact support immediately.`,
-      },
-    });
+    // Log security notification
+    try {
+      const ip = request.headers.get('x-forwarded-for') || 'Unknown';
+      await prisma.notification.create({
+        data: {
+          type: 'security',
+          title: 'Password Changed Successfully',
+          message: `The password for "${payload.email}" was changed from IP: ${ip}. If this was not you, contact support immediately.`,
+        },
+      });
+    } catch (e) {
+      console.error('Failed to create notification:', e);
+    }
 
     return NextResponse.json({ message: 'Password changed successfully' });
   } catch (error) {
