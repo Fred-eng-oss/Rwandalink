@@ -4,6 +4,9 @@ import { generateOTP, sendOTPEmail } from '@/lib/email';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'smartlink-secret-key';
+const OTP_WINDOW_MS = 10 * 1000;
+const OTP_TTL_MS = 10 * 60 * 1000;
+const exposeOtpInDevelopment = process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_SHOW_RESET_OTP === 'true';
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,31 +23,31 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const { token } = await request.json();
+    const payload = await request.json().catch(() => null);
+    const token = typeof payload?.token === 'string' ? payload.token : '';
 
     if (!token) {
       return NextResponse.json({ error: 'Token is required' }, { status: 400 });
     }
 
-    let payload: { email: string; purpose: string };
+    let decoded: { email: string; purpose: string };
     try {
-      payload = jwt.verify(token, JWT_SECRET) as { email: string; purpose: string };
+      decoded = jwt.verify(token, JWT_SECRET) as { email: string; purpose: string };
     } catch {
       return NextResponse.json({ error: 'Invalid or expired session. Please start over.' }, { status: 400 });
     }
 
-    if (payload.purpose !== 'password-reset') {
+    if (decoded.purpose !== 'password-reset') {
       return NextResponse.json({ error: 'Invalid session' }, { status: 400 });
     }
 
-    const email = payload.email;
-
+    const email = decoded.email;
     const lastReset = await prisma.passwordReset.findFirst({
       where: { email },
       orderBy: { createdAt: 'desc' },
     });
 
-    if (lastReset && Date.now() - new Date(lastReset.createdAt).getTime() < 60000) {
+    if (lastReset && Date.now() - new Date(lastReset.createdAt).getTime() < OTP_WINDOW_MS) {
       return NextResponse.json(
         { error: 'Please wait at least 60 seconds before requesting another code.' },
         { status: 429 }
@@ -52,28 +55,7 @@ export async function POST(request: NextRequest) {
     }
 
     const user = await prisma.user.findUnique({ where: { email } });
-    const expires = new Date(Date.now() + 10 * 60 * 1000);
-
-    // Unregistered email: return same success response, no DB record, no email
-    // Verify-otp will return "Invalid code" which is indistinguishable from wrong OTP
-    if (!user) {
-      const newToken = jwt.sign(
-        { email, purpose: 'password-reset' },
-        JWT_SECRET,
-        { expiresIn: '10m' }
-      );
-      return NextResponse.json({
-        message: 'A new verification code has been sent.',
-        token: newToken,
-        expiresAt: expires.toISOString(),
-      });
-    }
-
-    // Registered user: delete old codes, create new one
-    await prisma.passwordReset.deleteMany({
-      where: { email, used: false },
-    });
-
+    const expires = new Date(Date.now() + OTP_TTL_MS);
     const otp = generateOTP();
     const newToken = jwt.sign(
       { email, purpose: 'password-reset' },
@@ -81,22 +63,36 @@ export async function POST(request: NextRequest) {
       { expiresIn: '10m' }
     );
 
-    await prisma.passwordReset.create({
-      data: {
-        email,
-        otp,
-        token: newToken,
-        expires,
-      },
-    });
+    if (user) {
+      await prisma.passwordReset.deleteMany({ where: { email, used: false } });
+      await prisma.passwordReset.create({
+        data: {
+          email,
+          otp,
+          token: newToken,
+          expires,
+          attempts: 0,
+          maxAttempts: 5,
+          verified: false,
+          used: false,
+        },
+      });
+      void sendOTPEmail(email, otp).catch((emailError) => {
+        console.error('Failed to send resend OTP email:', emailError);
+      });
+    }
 
-    await sendOTPEmail(email, otp);
-
-    return NextResponse.json({
+    const responsePayload: Record<string, unknown> = {
       message: 'A new verification code has been sent.',
       token: newToken,
       expiresAt: expires.toISOString(),
-    });
+    };
+
+    if (exposeOtpInDevelopment) {
+      responsePayload.otp = otp;
+    }
+
+    return NextResponse.json(responsePayload);
   } catch (error) {
     console.error('Resend OTP error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

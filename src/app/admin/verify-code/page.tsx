@@ -4,19 +4,24 @@ import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Shield, Loader2, CheckCircle, RefreshCw } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 function VerifyCodeForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const tokenFromUrl = searchParams.get('token') || ''
+  const expiresAtFromUrl = searchParams.get('expiresAt') || ''
 
   const [token, setToken] = useState(tokenFromUrl)
+  const [expiresAt, setExpiresAt] = useState(expiresAtFromUrl)
   const [otp, setOtp] = useState(['', '', '', '', '', ''])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
-  const [resendCooldown, setResendCooldown] = useState(60)
+  const [resendCooldown, setResendCooldown] = useState(10)
   const [resendLoading, setResendLoading] = useState(false)
+  const [timeLeft, setTimeLeft] = useState<number | null>(null)
+  const [attemptsUsed, setAttemptsUsed] = useState(0)
 
   useEffect(() => {
     if (!tokenFromUrl) {
@@ -26,10 +31,37 @@ function VerifyCodeForm() {
   }, [tokenFromUrl, router])
 
   useEffect(() => {
+    if (expiresAtFromUrl) {
+      setExpiresAt(expiresAtFromUrl)
+    }
+  }, [expiresAtFromUrl])
+
+  useEffect(() => {
     if (resendCooldown <= 0) return
     const timer = setInterval(() => setResendCooldown((c) => c - 1), 1000)
     return () => clearInterval(timer)
   }, [resendCooldown])
+
+  useEffect(() => {
+    if (!expiresAt) return
+    const target = new Date(expiresAt).getTime()
+
+    const updateTimer = () => {
+      const now = Date.now()
+      const diff = Math.max(0, Math.floor((target - now) / 1000))
+      setTimeLeft(diff)
+    }
+
+    updateTimer()
+    const timer = setInterval(updateTimer, 1000)
+    return () => clearInterval(timer)
+  }, [expiresAt])
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+  }
 
   const handleOtpChange = (index: number, value: string) => {
     if (value.length > 1) value = value.slice(-1)
@@ -85,13 +117,16 @@ function VerifyCodeForm() {
 
       if (!res.ok) {
         setError(data.error || 'Verification failed')
+        setAttemptsUsed((prev) => prev + 1)
+        toast.error(data.error || 'Verification failed')
         return
       }
 
       setSuccess(true)
+      toast.success('OTP verified successfully')
       setTimeout(() => {
         router.push(`/admin/reset-password?token=${data.resetToken}`)
-      }, 1500)
+      }, 1200)
     } catch {
       setError('Something went wrong. Please try again.')
     } finally {
@@ -113,14 +148,27 @@ function VerifyCodeForm() {
 
       const data = await res.json()
 
+      if (!res.ok) {
+        setError(data.error || 'Failed to resend code')
+        toast.error(data.error || 'Failed to resend code')
+        return
+      }
+
+      toast.success('A new verification code has been sent')
       if (data.token) {
         setToken(data.token)
+        if (data.expiresAt) {
+          setExpiresAt(data.expiresAt)
+        }
         const url = new URL(window.location.href)
         url.searchParams.set('token', data.token)
+        if (data.expiresAt) {
+          url.searchParams.set('expiresAt', data.expiresAt)
+        }
         window.history.replaceState({}, '', url.toString())
       }
 
-      setResendCooldown(60)
+      setResendCooldown(10)
     } catch {
       setError('Failed to resend code. Please try again.')
     } finally {
@@ -163,8 +211,14 @@ function VerifyCodeForm() {
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">
+              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
                 {error}
+              </div>
+            )}
+
+            {attemptsUsed > 0 && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-700">
+                You have used {attemptsUsed} attempt{attemptsUsed > 1 ? 's' : ''}. A maximum of 5 attempts is allowed.
               </div>
             )}
 
@@ -172,6 +226,19 @@ function VerifyCodeForm() {
               <label className="mb-3 block text-sm font-medium text-gray-700 text-center">
                 Verification Code
               </label>
+              {timeLeft !== null && (
+                <div className="text-center mb-4">
+                  {timeLeft > 0 ? (
+                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-600">
+                      Code expires in {formatTime(timeLeft)}
+                    </span>
+                  ) : (
+                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-red-50 text-red-600">
+                      Code expired! Please request a new code.
+                    </span>
+                  )}
+                </div>
+              )}
               <div className="flex justify-center gap-2">
                 {otp.map((digit, i) => (
                   <input
@@ -184,7 +251,8 @@ function VerifyCodeForm() {
                     onChange={(e) => handleOtpChange(i, e.target.value)}
                     onKeyDown={(e) => handleOtpKeyDown(i, e)}
                     onPaste={i === 0 ? handleOtpPaste : undefined}
-                    className="h-12 w-12 rounded-lg border border-gray-300 bg-white text-center text-lg font-bold text-gray-900 outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    disabled={timeLeft !== null && timeLeft <= 0}
+                    className="h-12 w-12 rounded-lg border border-gray-300 bg-white text-center text-lg font-bold text-gray-900 outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
                     autoFocus={i === 0}
                   />
                 ))}
@@ -193,7 +261,7 @@ function VerifyCodeForm() {
 
             <button
               type="submit"
-              disabled={loading || !isComplete}
+              disabled={loading || !isComplete || (timeLeft !== null && timeLeft <= 0)}
               className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}

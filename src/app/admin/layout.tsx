@@ -54,9 +54,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [userName, setUserName] = useState('')
 
   const isLoginPage = pathname === '/admin'
+  const isPublicAdminPage =
+    pathname === '/admin/forgot-password' ||
+    pathname === '/admin/verify-code' ||
+    pathname === '/admin/reset-password'
 
   useEffect(() => {
-    if (isLoginPage) return
+    if (isLoginPage || isPublicAdminPage) return
     const token = localStorage.getItem('admin_token')
     if (!token) {
       router.replace('/admin')
@@ -71,7 +75,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     } catch {
       setUserName('Admin')
     }
-  }, [isLoginPage, router])
+  }, [isLoginPage, isPublicAdminPage, router])
 
   function handleLogout() {
     localStorage.removeItem('admin_token')
@@ -80,7 +84,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     router.replace('/admin')
   }
 
-  if (isLoginPage) {
+  if (isLoginPage || isPublicAdminPage) {
     return <>{children}</>
   }
 

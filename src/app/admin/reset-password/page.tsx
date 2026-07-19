@@ -4,21 +4,8 @@ import { useState, useEffect, Suspense, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Lock, Eye, EyeOff, Loader2, CheckCircle, Shield } from 'lucide-react'
-
-function getStrength(password: string): { score: number; label: string; color: string } {
-  let score = 0
-  if (password.length >= 8) score++
-  if (password.length >= 12) score++
-  if (/[A-Z]/.test(password) && /[a-z]/.test(password)) score++
-  if (/[0-9]/.test(password)) score++
-  if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(password)) score++
-
-  if (score <= 1) return { score, label: 'Weak', color: 'bg-red-500' }
-  if (score <= 2) return { score, label: 'Fair', color: 'bg-orange-500' }
-  if (score <= 3) return { score, label: 'Good', color: 'bg-yellow-500' }
-  if (score <= 4) return { score, label: 'Strong', color: 'bg-blue-500' }
-  return { score, label: 'Very Strong', color: 'bg-green-500' }
-}
+import toast from 'react-hot-toast'
+import { getPasswordStrength, validatePasswordRequirements } from '@/lib/password-reset'
 
 function ResetPasswordForm() {
   const router = useRouter()
@@ -40,17 +27,10 @@ function ResetPasswordForm() {
     setResetToken(tokenFromUrl)
   }, [tokenFromUrl, router])
 
-  const strength = useMemo(() => getStrength(password), [password])
-
-  const requirements = useMemo(() => [
-    { label: 'At least 8 characters', met: password.length >= 8 },
-    { label: 'One uppercase letter', met: /[A-Z]/.test(password) },
-    { label: 'One lowercase letter', met: /[a-z]/.test(password) },
-    { label: 'One number', met: /[0-9]/.test(password) },
-    { label: 'One special character', met: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(password) },
-  ], [password])
-
-  const allRequirementsMet = requirements.every((r) => r.met)
+  const strength = useMemo(() => getPasswordStrength(password), [password])
+  const passwordValidation = useMemo(() => validatePasswordRequirements(password), [password])
+  const requirements = passwordValidation.requirements
+  const allRequirementsMet = passwordValidation.valid
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -79,10 +59,12 @@ function ResetPasswordForm() {
 
       if (!res.ok) {
         setError(data.error || 'Something went wrong')
+        toast.error(data.error || 'Something went wrong')
         return
       }
 
       setSuccess(true)
+      toast.success('Password changed successfully')
       setTimeout(() => router.push('/admin'), 3000)
     } catch {
       setError('Something went wrong. Please try again.')
@@ -117,7 +99,7 @@ function ResetPasswordForm() {
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-50">
               <CheckCircle className="h-7 w-7 text-green-600" />
             </div>
-            <p className="text-green-600 font-medium">Password changed successfully!</p>
+            <p className="text-green-600 font-medium">Password changed successfully.</p>
             <p className="text-sm text-gray-500">Redirecting to login in 3 seconds...</p>
           </div>
         ) : (

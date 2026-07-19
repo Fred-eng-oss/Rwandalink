@@ -19,7 +19,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const { token, otp } = await request.json();
+    const payload = await request.json().catch(() => null);
+    const token = typeof payload?.token === 'string' ? payload.token : '';
+    const otp = typeof payload?.otp === 'string' ? payload.otp : '';
 
     if (!token || !otp) {
       return NextResponse.json({ error: 'Token and verification code are required' }, { status: 400 });
@@ -29,33 +31,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Verification code must be exactly 6 digits' }, { status: 400 });
     }
 
-    let payload: { email: string; purpose: string };
+    let decoded: { email: string; purpose: string };
     try {
-      payload = jwt.verify(token, JWT_SECRET) as { email: string; purpose: string };
+      decoded = jwt.verify(token, JWT_SECRET) as { email: string; purpose: string };
     } catch {
       return NextResponse.json({ error: 'Invalid or expired session. Please request a new code.' }, { status: 400 });
     }
 
-    if (payload.purpose !== 'password-reset') {
+    if (decoded.purpose !== 'password-reset') {
       return NextResponse.json({ error: 'Invalid session' }, { status: 400 });
     }
 
     const reset = await prisma.passwordReset.findFirst({
       where: {
-        email: payload.email,
+        email: decoded.email,
         token,
         used: false,
       },
       orderBy: { createdAt: 'desc' },
     });
 
-    // No record found (unregistered email or deleted record) - return same error as wrong OTP
-    // This prevents user enumeration
     if (!reset) {
       return NextResponse.json({ error: 'Invalid verification code. Please try again.' }, { status: 400 });
     }
 
     if (new Date() > reset.expires) {
+      await prisma.passwordReset.update({
+        where: { id: reset.id },
+        data: { used: true },
+      });
       return NextResponse.json({ error: 'This code has expired. Please request a new one.' }, { status: 400 });
     }
 
@@ -77,7 +81,7 @@ export async function POST(request: NextRequest) {
     }
 
     const resetToken = jwt.sign(
-      { email: payload.email, purpose: 'reset-verified', resetId: reset.id },
+      { email: decoded.email, purpose: 'reset-verified', resetId: reset.id },
       JWT_SECRET,
       { expiresIn: '5m' }
     );
@@ -92,11 +96,11 @@ export async function POST(request: NextRequest) {
         data: {
           type: 'security',
           title: 'OTP Verified',
-          message: `The verification code for "${payload.email}" was verified successfully.`,
+          message: `The verification code for "${decoded.email}" was verified successfully.`,
         },
       });
-    } catch (e) {
-      console.error('Failed to create notification:', e);
+    } catch (error) {
+      console.error('Failed to create notification:', error);
     }
 
     return NextResponse.json({ message: 'Verification successful', resetToken });
